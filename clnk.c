@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
-char* read_null_term(FILE* f, int offset, char* out_buf, int size)
+char* extract_cstring_buf(FILE* f, int offset, char* out_buf, int size)
 {
 	fseek(f, offset, SEEK_SET);
 
@@ -27,21 +27,8 @@ char* read_null_term(FILE* f, int offset, char* out_buf, int size)
 	return s;
 }
 
-
-int main(int argc, char** argv)
+int validate_lnk_file(FILE* f)
 {
-
-	if (argc != 2) {
-		printf("Usage: %s some_shortcut.lnk\n", argv[0]);
-		return 0;
-	}
-
-	FILE* f = fopen(argv[1], "rb");
-	if (!f) {
-		perror("Couldn't open file");
-		return 0;
-	}
-
 	uint8_t sig[4];
 	uint8_t guid[16] = {0};
 	fread(sig, 4, 1, f);
@@ -54,44 +41,94 @@ int main(int argc, char** argv)
 
 	char guid_valid[16] = "\x01\x14\x02\x00\x00\x00\x00\x00\xc0\x00\x00\x00\x00\x00\x00" "F";
 	if (memcmp(guid, guid_valid, 16)) {
-		for (int i=0; i<16; i++) {
-			printf("%d: %u %u\n", i, guid[i], guid_valid[i]);
-		}
 		puts("Cannot read this kind of .lnk file!");
 		return 0;
 	}
+	return 1;
+}
 
-	
+#ifdef __BIG_ENDIAN__
+void make_native_u16(char buf[2])
+{
+	char tmp = buf[0];
+	buf[0] = buf[1];
+	buf[1] = tmp;
+}
+void make_native_u32(char buf[4])
+{
+	char tmp = buf[0];
+	buf[0] = buf[3];
+	buf[3] = tmp;
 
+	tmp = buf[2];
+	buf[2] = buf[1];
+	buf[1] = tmp;
+}
+#else
+#define make_native_u16(x)
+#define make_native_u32(x)
+#endif
+
+
+int get_path_offset(FILE* f)
+{
 	fseek(f, 76, SEEK_SET);
 
 	// assume LSB machine for now
 	uint16_t items;
 	fread(&items, 2, 1, f);
-	printf("items = %u\n", items);
+	make_native_u16((char*)&items);
 
 	int struct_start = 78 + items;
 	int base_path_off_off = struct_start + 16;
-	printf("base_path_off_off: %d\n", base_path_off_off);
 
 	uint32_t base_path_off;
 	fseek(f, base_path_off_off, SEEK_SET);
 	fread(&base_path_off, 4, 1, f);
-	printf("base_path_off: %u\n", base_path_off);
+	make_native_u32((char*)&base_path_off);
 
 	base_path_off += struct_start;
+	return base_path_off;
+}
+
+char* cl_get_path_buf(const char* lnk_file, char* buf, int size)
+{
+	FILE* f = fopen(lnk_file, "rb");
+	if (!f) {
+		perror("Couldn't open file");
+		return NULL;
+	}
+
+	if (!validate_lnk_file(f)) {
+		return NULL;
+	}
+
+	int base_path_off = get_path_offset(f);
+
+	char* ret = extract_cstring_buf(f, base_path_off, buf, size);
+
+	fclose(f);
+
+	return ret;
+}
+
+
+int main(int argc, char** argv)
+{
+
+	if (argc != 2) {
+		printf("Usage: %s some_shortcut.lnk\n", argv[0]);
+		return 0;
+	}
+
+
 	char path[1024] = {0};
-	if (read_null_term(f, base_path_off, path, sizeof(path))) {
+
+	if (cl_get_path_buf(argv[1], path, sizeof(path))) {
 		printf("Path: %s\n", path);
 	} else {
 		printf("Invalid Path: %s\n", path);
 	}
-
-	
-
-
-	fclose(f);
-
 
 
 	return 0;
