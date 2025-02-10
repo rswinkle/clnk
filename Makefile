@@ -1,7 +1,7 @@
 
 FLAGS=-std=c99
 
-clnk: clnk.c
+clnk: main.c
 	$(CC) $(FLAGS) -o clnk main.c -Wall -Wextra -pedantic-errors -Wstrict-prototypes
 
 clean:

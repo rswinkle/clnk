@@ -14,4 +14,6 @@ that uses that example.
 
 It is under the MIT License.
 
-TODO finish this README
+TODO
+finish this README
+Improve library
