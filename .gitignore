@@ -20,6 +20,7 @@
 *.AppImage
 
 clnk
+clnk_cpp
 
 #ignore ~ files
 *~
