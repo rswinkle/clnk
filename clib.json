@@ -1,0 +1,17 @@
+{
+  "name": "clnk",
+  "version": "0.91.0",
+  "repo": "rswinkle/clnk",
+  "description": "Extract the path from windows shortcut files (.lnk)",
+  "keywords": [
+    "windows",
+    "shortcut",
+    "link",
+    "lnk",
+    "single-header-library"
+  ],
+  "license": "MIT",
+  "src": [
+    "clnk.h"
+  ]
+}

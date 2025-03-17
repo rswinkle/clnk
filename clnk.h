@@ -1,5 +1,5 @@
 /*
-clnk 0.90.1 MIT licensed Windows .lnk shortct file parser
+clnk 0.91.0 MIT licensed Windows .lnk shortct file parser
 robertwinkler.com
 
 Do this:
